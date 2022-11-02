@@ -44,7 +44,8 @@
    $reset = *reset;
    
    //PC
-   $next_pc[31:0] = $reset ? 'b0 : $pc + 'b100;
+   $next_pc[31:0] = $reset ? 'b0 :
+                    $taken_br ? $br_tgt_pc : $pc + 'b100;
    $pc[31:0] = >>1$next_pc;
    
    //IMEM
@@ -100,25 +101,36 @@
    `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_addi $is_add);
    
    //RF_READ
-   $rd_en1 = $rs1_valid;
+   $rd1_en = $rs1_valid;
    $rd1_index[4:0] = $rs1;
-   $rd_en2 = $rs2_valid;
+   $rd2_en = $rs2_valid;
    $rd2_index[4:0] = $rs2;
    
    $src1_value[31:0] = $rd1_data;
    $src2_value[31:0] = $rd2_data;
+   
    
    //ALU
    $result[31:0] = $is_addi ? $src1_value + $imm :
                    $is_add ? $src1_value + $src2_value : 32'b0;
    
    //RF_WRITE
-   $wr_en = $rd_valid && ($rd != 0);
-   $wr_index[4:0] = $rd;
+   $wr_en = $rd_valid && !$is_b_instr && ($rd != 5'b0);
+   $wr_index[4:0] = $rd[4:0];
    $wr_data[31:0] = $result;
    
+   //BRANCH
+   $taken_br = $is_beq ? $src1_value == $src2_value :
+               $is_bne ? $src1_value != $src2_value :
+               $is_blt ? ($src1_value < $src2_value) ^ ($src1_value[31] != $src2_value[31]) :
+               $is_bge ? ($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31]) :
+               $is_bltu ? $src1_value < $src2_value :
+               $is_bgeu ? $src1_value >= $src2_value : 1'b0;
+   
+   $br_tgt_pc[31:0] = $pc + $imm;
+   
    // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = 1'b0;
+   m4+tb()
    *failed = *cyc_cnt > M4_MAX_CYC;
    
    m4+rf(32, 32, $reset, $wr_en, $wr_index[4:0], $wr_data[31:0], $rd1_en, $rd1_index[4:0], $rd1_data, $rd2_en, $rd2_index[4:0], $rd2_data)
