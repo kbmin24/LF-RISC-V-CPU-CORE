@@ -22,7 +22,9 @@
    
    //PC
    $next_pc[31:0] = $reset ? 'b0 :
-                    $taken_br ? $br_tgt_pc : $pc + 'b100;
+                    $taken_br ? $br_tgt_pc :
+                    $is_jal ? $br_tgt_pc :
+                    $is_jalr ? $jalr_tgt_pc : $pc + 'b100;
    $pc[31:0] = >>1$next_pc;
    
    //IMEM
@@ -161,6 +163,9 @@
                $is_bge ? ($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31]) :
                $is_bltu ? $src1_value < $src2_value :
                $is_bgeu ? $src1_value >= $src2_value : 1'b0;
+   
+   //JUMP
+   $jalr_tgt_pc[31:0] = $src1_value + $imm;
    
    $br_tgt_pc[31:0] = $pc + $imm;
    
