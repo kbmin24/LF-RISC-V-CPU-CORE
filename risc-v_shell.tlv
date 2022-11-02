@@ -108,6 +108,15 @@
    $src1_value[31:0] = $rd1_data;
    $src2_value[31:0] = $rd2_data;
    
+   //ALU
+   $result[31:0] = $is_addi ? $src1_value + $imm :
+                   $is_add ? $src1_value + $src2_value : 32'b0;
+   
+   //RF_WRITE
+   $wr_en = $rd_valid && ($rd != 0);
+   $wr_index[4:0] = $rd;
+   $wr_data[31:0] = $result;
+   
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = 1'b0;
    *failed = *cyc_cnt > M4_MAX_CYC;
